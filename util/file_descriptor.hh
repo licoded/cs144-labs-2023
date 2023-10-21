@@ -14,9 +14,13 @@ class FileDescriptor
   {
   public:
     int fd_;                    // The file descriptor number returned by the kernel
+                                // === file ID
     bool eof_ = false;          // Flag indicating whether FDWrapper::fd_ is at EOF
+                                // === isEOF
     bool closed_ = false;       // Flag indicating whether FDWrapper::fd_ has been closed
+                                // === isClosed
     bool non_blocking_ = false; // Flag indicating whether FDWrapper::fd_ is non-blocking
+                                // === isNonBlocking???
     unsigned read_count_ = 0;   // The number of times FDWrapper::fd_ has been read
     unsigned write_count_ = 0;  // The numberof times FDWrapper::fd_ has been written
 
@@ -41,6 +45,13 @@ class FileDescriptor
   std::shared_ptr<FDWrapper> internal_fd_;
 
   // private constructor used to duplicate the FileDescriptor (increase the reference count)
+  /**
+   * Q: why the reference count will increase?
+   *    reference count of what? FDWrapper? FileDescriptor?
+   *    If FDWrapper, move(other_shared_ptr) will not increase the reference count of FDWrapper?
+   *    So, this means the reference count of FileDescriptor will increase?
+   * TODO: Test above thoughts!
+   */
   explicit FileDescriptor( std::shared_ptr<FDWrapper> other_shared_ptr );
 
 protected:
