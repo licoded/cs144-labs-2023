@@ -11,6 +11,20 @@ void get_URL( const string& host, const string& path )
 {
   cerr << "Function called: get_URL(" << host << ", " << path << ")\n";
   cerr << "Warning: get_URL() has not been implemented yet.\n";
+  /**
+   * Use the TCPSocket and Address classes.
+   *
+   * Hints:
+   *  - each INPUT/OUTPUT line in HTTP must be ended with “\r\n”
+   *  - Make sure to read and print all the output from the server until the socket reaches
+   *    “EOF” (end of file)—a single call to read is not enough.
+   *  - We expect you’ll need to write about ten lines of code
+   *
+   * Workflow:
+   *  1. just run `make`, and you need to fix all errors
+   *  2. manual test: `./apps/webget cs144.keithw.org /hello`
+   *  3. automated test: `cmake --build build --target check_webget`
+   */
 }
 
 int main( int argc, char* argv[] )
