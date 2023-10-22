@@ -25,6 +25,23 @@ void get_URL( const string& host, const string& path )
    *  2. manual test: `./apps/webget cs144.keithw.org /hello`
    *  3. automated test: `cmake --build build --target check_webget`
    */
+  Address addr( host, "http" );
+
+  TCPSocket socket;
+  socket.connect( addr );
+  // cout << "after connect" << endl;
+
+  socket.write( "GET " + path + " HTTP/1.1\r\n" );
+  socket.write( "Host: " + host + "\r\n" );
+  socket.write( "Connection: close\r\n" );
+  socket.write( "\r\n" );
+
+  while ( !socket.eof() ) {
+    string buffer;
+    socket.read( buffer );
+    cout << buffer;
+  }
+  // cout << "after EOF" << endl;
 }
 
 int main( int argc, char* argv[] )
