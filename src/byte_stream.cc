@@ -33,7 +33,7 @@ using namespace std;
  *  3. automated test: `cmake --build build --target check0`
  */
 
-ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ), buffer_( "" ), remain_capacity_( capacity ) {}
+ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ), remain_capacity_( capacity ) {}
 
 void Writer::push( string data )
 {
@@ -41,7 +41,7 @@ void Writer::push( string data )
   if ( closed_ ) {
     return;
   }
-  uint64_t true_write_length = min( remain_capacity_, data.size() );
+  const uint64_t true_write_length = min( remain_capacity_, data.size() );
   buffer_ += data.substr( 0, true_write_length );
   total_written_ += true_write_length;
   remain_capacity_ -= true_write_length;
@@ -101,7 +101,7 @@ bool Reader::has_error() const
 void Reader::pop( uint64_t len )
 {
   // Your code here.
-  int true_pop_length = min( len, buffer_.size() );
+  const uint64_t true_pop_length = min( len, buffer_.size() );
   buffer_.erase( 0, true_pop_length );
   total_read_ += true_pop_length;
   remain_capacity_ += true_pop_length;
