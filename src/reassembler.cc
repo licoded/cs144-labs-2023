@@ -28,10 +28,17 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   if ( out_of_range )
     return; // just discard this datagram
 
+  bool out_of_capacity
+    = first_index + data.size() > next_index + output.available_capacity(); // 10, 10-19, 10, 10-19 is in capacity
+  if ( out_of_capacity )
+    return; // also discard only if we cannot accept the whole datagram, even if can partially accept
+
   /**
    * Store the data in `datagram_queue`
    */
+  // TODO: check capacity is enough to store the whole datagram
   datagram_queue.push( make_pair( first_index, data ) );
+  temporary_bytes += data.size();
 }
 
 uint64_t Reassembler::bytes_pending() const
