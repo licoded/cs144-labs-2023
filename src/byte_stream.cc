@@ -33,74 +33,88 @@ using namespace std;
  *  3. automated test: `cmake --build build --target check0`
  */
 
-ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ) {}
+ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ), buffer_( "" ), remain_capacity_( capacity ) {}
 
 void Writer::push( string data )
 {
   // Your code here.
-  (void)data;
+  if ( closed_ ) {
+    return;
+  }
+  uint64_t true_write_length = min( remain_capacity_, data.size() );
+  buffer_ += data.substr( 0, true_write_length );
+  total_written_ += true_write_length;
+  remain_capacity_ -= true_write_length;
 }
 
 void Writer::close()
 {
   // Your code here.
+  if ( closed_ ) {
+    return;
+  }
+  closed_ = true;
 }
 
 void Writer::set_error()
 {
   // Your code here.
+  is_error_ = true;
 }
 
 bool Writer::is_closed() const
 {
   // Your code here.
-  return {};
+  return closed_;
 }
 
 uint64_t Writer::available_capacity() const
 {
   // Your code here.
-  return {};
+  return remain_capacity_;
 }
 
 uint64_t Writer::bytes_pushed() const
 {
   // Your code here.
-  return {};
+  return total_written_;
 }
 
 string_view Reader::peek() const
 {
   // Your code here.
-  return {};
+  return buffer_;
 }
 
 bool Reader::is_finished() const
 {
   // Your code here.
-  return {};
+  return closed_ && buffer_.empty();
 }
 
 bool Reader::has_error() const
 {
   // Your code here.
-  return {};
+  return is_error_;
 }
 
 void Reader::pop( uint64_t len )
 {
   // Your code here.
-  (void)len;
+  int true_pop_length = min( len, buffer_.size() );
+  buffer_.erase( 0, true_pop_length );
+  total_read_ += true_pop_length;
+  remain_capacity_ += true_pop_length;
 }
 
 uint64_t Reader::bytes_buffered() const
 {
   // Your code here.
-  return {};
+  return capacity_ - remain_capacity_;
 }
 
 uint64_t Reader::bytes_popped() const
 {
   // Your code here.
-  return {};
+  return total_read_;
 }
