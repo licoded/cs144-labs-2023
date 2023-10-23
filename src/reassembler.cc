@@ -1,4 +1,5 @@
 #include "reassembler.hh"
+#include <tuple>
 
 using namespace std;
 
@@ -25,9 +26,13 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     uint64_t true_write_size = min( data.size(), output.available_capacity() );
     output.push( data.substr( 0, true_write_size ) );
 
+    if ( is_last_substring && true_write_size == data.size() ) {
+      output.close();
+    }
+
     // check and pop some datagrams in datagram_queue
     while ( output.available_capacity() > 0 && !datagram_queue.empty() ) {
-      auto [index, datagram] = datagram_queue.top();
+      auto [index, datagram, is_end] = datagram_queue.top();
       datagram_queue.pop();
 
       if ( index > next_index ) {
@@ -39,11 +44,14 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
          * NOTE: all datagrams in `datagram_queue` are in capacity
          */
         output.push( datagram );
+        if ( is_end ) {
+          output.close();
+        }
         next_index += datagram.size();
         temporary_bytes -= datagram.size();
       } else // index < next_index
       {
-        datagram_queue.push( make_pair( index, datagram ) );
+        datagram_queue.push( tuple( index, datagram, is_end ) );
         break;
       } // END else
     }   // END while
@@ -69,7 +77,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
    * Store the data in `datagram_queue`
    */
   // TODO: check capacity is enough to store the whole datagram
-  datagram_queue.push( make_pair( first_index, data ) );
+  datagram_queue.push( make_tuple( first_index, data, is_last_substring ) );
   temporary_bytes += data.size();
 }
 

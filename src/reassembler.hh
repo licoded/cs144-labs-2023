@@ -6,9 +6,9 @@
 
 class Reassembler
 {
-  typedef std::pair<int, std::string> datagram;
+  typedef std::tuple<uint64_t, std::string, bool> Datagram;
 
-  std::priority_queue<datagram, std::vector<datagram>, std::greater<datagram>> datagram_queue;
+  std::priority_queue<Datagram, std::vector<Datagram>, std::greater<Datagram>> datagram_queue;
   uint64_t next_index = 0;
   uint64_t temporary_bytes = 0;
 
