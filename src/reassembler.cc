@@ -11,8 +11,13 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
    */
 
   if ( first_index < next_index ) {
-    return; // just discard this datagram if it is already received
-            // In fact, this datagram may could be partially accepted
+    if ( first_index + data.size() < next_index ) { // 10, 0-9, 10
+      return;                                       // just discard this datagram if it is already received
+    } else {                                        // 10, 10-19, 15
+      data = data.substr( next_index - first_index );
+      first_index = next_index;
+      // continue to encounter `first_index == next_index` if condition
+    }
   }
 
   if ( first_index == next_index ) {
