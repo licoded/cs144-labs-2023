@@ -9,6 +9,11 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
    * ATTENTION: TODO: deal with the overlap case
    */
 
+  if ( first_index < next_index ) {
+    return; // just discard this datagram if it is already received
+            // In fact, this datagram may could be partially accepted
+  }
+
   if ( first_index == next_index ) {
     /**
      * TODO: write to `Writer& output`
