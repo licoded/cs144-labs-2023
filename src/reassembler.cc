@@ -25,6 +25,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     // write to `Writer& output`
     uint64_t true_write_size = min( data.size(), output.available_capacity() );
     output.push( data.substr( 0, true_write_size ) );
+    next_index += true_write_size;
 
     if ( is_last_substring && true_write_size == data.size() ) {
       output.close();
