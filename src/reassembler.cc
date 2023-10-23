@@ -21,6 +21,33 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
      * ATTENTION: the maximum write size is limited by `Writer::available_capacity()`
      * ATTENTION: after writing this incoming datagram, we should check and pop some datagrams in datagram_queue
      */
+    // write to `Writer& output`
+    uint64_t true_write_size = min( data.size(), output.available_capacity() );
+    output.push( data.substr( 0, true_write_size ) );
+
+    // check and pop some datagrams in datagram_queue
+    while ( output.available_capacity() > 0 && !datagram_queue.empty() ) {
+      auto [index, datagram] = datagram_queue.top();
+      datagram_queue.pop();
+
+      if ( index > next_index ) {
+        temporary_bytes -= datagram.size();
+        continue; // just discard this datagram if it is already received
+                  // In fact, this datagram may could be partially accepted
+      } else if ( index == next_index ) {
+        /**
+         * NOTE: all datagrams in `datagram_queue` are in capacity
+         */
+        output.push( datagram );
+        next_index += datagram.size();
+        temporary_bytes -= datagram.size();
+      } else // index < next_index
+      {
+        datagram_queue.push( make_pair( index, datagram ) );
+        break;
+      } // END else
+    }   // END while
+
     return;
   }
 
