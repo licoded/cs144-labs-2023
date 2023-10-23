@@ -41,7 +41,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
       auto [index, datagram, is_end] = datagram_queue.top();
       datagram_queue.pop();
 
-      if ( index > next_index ) {
+      if ( index < next_index ) {
         temporary_bytes -= datagram.size();
         continue; // just discard this datagram if it is already received
                   // In fact, this datagram may could be partially accepted
@@ -55,7 +55,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
         }
         next_index += datagram.size();
         temporary_bytes -= datagram.size();
-      } else // index < next_index
+      } else // index > next_index
       {
         datagram_queue.push( tuple( index, datagram, is_end ) );
         break;
