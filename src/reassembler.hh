@@ -6,7 +6,15 @@
 
 class Reassembler
 {
+  typedef std::pair<int, std::string> datagram;
+
+  std::priority_queue<datagram, std::vector<datagram>, std::greater<datagram>> datagram_queue;
+  uint64_t next_index = 0;
+  uint64_t temporary_bytes = 0;
+
 public:
+  Reassembler() : datagram_queue() {}
+
   /*
    * Insert a new substring to be reassembled into a ByteStream.
    *   `first_index`: the index of the first byte of the substring
