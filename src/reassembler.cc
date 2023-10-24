@@ -83,6 +83,8 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   // 10, 10-19, 15, 19-15+1=19+1-15=10+10-15
   uint64_t in_range_size = min( data.size(), next_index + output.available_capacity() - first_index );
   data = data.substr( 0, in_range_size );
+  if ( in_range_size < data.size() )
+    is_last_substring = false;
 
   /**
    * Store the data in `datagram_queue`
