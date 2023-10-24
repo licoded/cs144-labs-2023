@@ -42,9 +42,15 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
       datagram_queue.pop();
 
       if ( index < next_index ) {
+        if ( index + datagram.size() <= next_index ) { // 10, 10-19, 20
+          continue;                                    // just discard this datagram if it is already received
+        } else {
+          datagram = datagram.substr( next_index - index );
+          output.push( datagram );
+          next_index += datagram.size();
+        }
         temporary_bytes -= datagram.size();
-        continue; // just discard this datagram if it is already received
-                  // In fact, this datagram may could be partially accepted
+        continue;
       } else if ( index == next_index ) {
         /**
          * NOTE: all datagrams in `datagram_queue` are in capacity
