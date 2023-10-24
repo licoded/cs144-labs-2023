@@ -74,10 +74,9 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   if ( out_of_range )
     return; // just discard this datagram
 
-  bool out_of_capacity
-    = first_index + data.size() > next_index + output.available_capacity(); // 10, 10-19, 10, 10-19 is in capacity
-  if ( out_of_capacity )
-    return; // also discard only if we cannot accept the whole datagram, even if can partially accept
+  // 10, 10-19, 15, 19-15+1=19+1-15=10+10-15
+  uint64_t in_range_size = min( data.size(), next_index + output.available_capacity() - first_index );
+  data = data.substr( 0, in_range_size );
 
   /**
    * Store the data in `datagram_queue`
