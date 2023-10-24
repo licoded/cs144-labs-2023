@@ -43,7 +43,7 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
 
       if ( index < next_index ) {
         if ( index + datagram.size() <= next_index ) { // 10, 10-19, 20
-          continue;                                    // just discard this datagram if it is already received
+          // do nothing, just discard this datagram if it is already received
         } else {
           datagram = datagram.substr( next_index - index );
           output.push( datagram );
