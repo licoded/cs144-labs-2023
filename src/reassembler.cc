@@ -3,6 +3,16 @@
 
 using namespace std;
 
+void Reassembler::push_to_writer( Writer& output, const Datagram& datagram )
+{
+  auto [first_index, data, is_last_substring] = datagram;
+  output.push( data );
+  next_index += data.size();
+
+  if ( is_last_substring )
+    output.close();
+}
+
 void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring, Writer& output )
 {
   // Your code here.
@@ -63,33 +73,26 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
     }
   }
 
-  if ( first_index == next_index ) {
-    output.push( data );
-    next_index += data.size();
+  Datagram datagram = make_tuple( first_index, data, is_last_substring );
 
-    if ( is_last_substring )
-      output.close();
+  if ( first_index == next_index ) {
+    push_to_writer( output, datagram );
 
     while ( !datagram_queue.empty() ) {
       auto [first_index_, data_, is_last_substring_] = datagram_queue.top();
 
       if ( first_index_ > next_index )
         break;
+
+      push_to_writer( output, datagram_queue.top() );
       datagram_queue.pop();
-
-      output.push( data_ );
-      next_index += data_.size();
-
-      if ( is_last_substring_ )
-        output.close();
-
       temporary_bytes -= data_.size();
     }
 
     return;
   }
 
-  datagram_queue.push( make_tuple( first_index, data, is_last_substring ) );
+  datagram_queue.push( datagram );
   temporary_bytes += data.size();
 }
 

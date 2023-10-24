@@ -15,6 +15,12 @@ class Reassembler
 public:
   Reassembler() : datagram_queue() {}
 
+  /**
+   * Write datagram to output. (should be checked in `insert` func)
+   * Deal with `next_index` variable, and close the stream if reach end.
+   */
+  void push_to_writer( Writer& output, const Datagram& datagram );
+
   /*
    * Insert a new substring to be reassembled into a ByteStream.
    *   `first_index`: the index of the first byte of the substring
