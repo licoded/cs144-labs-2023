@@ -88,6 +88,52 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
    * Store the data in `datagram_queue`
    */
   // TODO: check capacity is enough to store the whole datagram
+  // pop all elems in datagram_queue, and push them into a vector
+  vector<Datagram> datagram_vec;
+  // vector<Datagram> datagram_start_vec, datagram_end_vec;
+  while ( !datagram_queue.empty() ) {
+    datagram_vec.push_back( datagram_queue.top() );
+
+    // auto [index, datagram, is_end] = datagram_queue.top();
+    // datagram_start_vec.push_back( make_tuple( index, datagram, is_end ) );
+    // datagram_end_vec.push_back( make_tuple( index + datagram.size() - 1, datagram, is_end ) );
+
+    datagram_queue.pop();
+    // temporary_bytes -= datagram.size();
+  }
+  temporary_bytes = 0;
+
+  uint64_t last_index = first_index + data.size() - 1;
+  // bool has_overlap = false; // SEEMs useless, as we always push the incoming datagram into datagram_queue
+  //                           // in the last (after the following for loop)
+  /**
+   * ATTENTION: can overlap with multiple datagrams!!!
+   */
+  for ( u_int64_t i = 0; i < datagram_vec.size(); i++ ) {
+    auto [first_index_, data_, is_last_substring_] = datagram_vec[i];
+    uint64_t last_index_ = first_index_ + data_.size() - 1;
+    bool is_overlap = ( first_index <= last_index_ ) && ( first_index_ <= last_index );
+    if ( !is_overlap ) {
+      datagram_queue.push( datagram_vec[i] );
+      temporary_bytes += data_.size();
+      continue;
+    }
+    // has_overlap = true;
+    is_last_substring = is_last_substring || is_last_substring_;
+    // deal with the pre-part
+    if ( first_index_ < first_index ) // extend data to the left
+    {
+      data = data_.substr( 0, first_index - first_index_ ) + data; // 10, 10-19, 15
+      first_index = first_index_;
+    }
+    // deal with the post-part
+    if ( last_index_ > last_index ) // extend data to the right
+    {
+      data = data + data_.substr( last_index + 1 - first_index_, last_index_ - last_index ); // 10, 10-19, 15
+      last_index = last_index_;
+    }
+  }
+
   datagram_queue.push( make_tuple( first_index, data, is_last_substring ) );
   temporary_bytes += data.size();
 }
