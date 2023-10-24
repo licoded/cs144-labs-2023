@@ -35,7 +35,7 @@ using namespace std;
 
 ByteStream::ByteStream( uint64_t capacity ) : capacity_( capacity ), remain_capacity_( capacity ) {}
 
-void Writer::push( string data )
+void Writer::push( const string& data )
 {
   // Your code here.
   if ( closed_ ) {
