@@ -21,6 +21,12 @@ public:
    */
   void push_to_writer( Writer& output, const Datagram& datagram );
 
+  /**
+   * Merge current datagram with existing datagrams, which is overlapped with current datagram, in queue.
+   * ATTENTION: can overlap with multiple datagrams!!!
+   */
+  void extend( Datagram& datagram );
+
   /*
    * Insert a new substring to be reassembled into a ByteStream.
    *   `first_index`: the index of the first byte of the substring

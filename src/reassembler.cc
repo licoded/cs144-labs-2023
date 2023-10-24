@@ -13,6 +13,43 @@ void Reassembler::push_to_writer( Writer& output, const Datagram& datagram )
     output.close();
 }
 
+void Reassembler::extend( Datagram& datagram )
+{
+  auto& [first_index, data, is_last_substring] = datagram;
+
+  vector<Datagram> datagram_vec;
+  while ( !datagram_queue.empty() ) {
+    datagram_vec.push_back( datagram_queue.top() );
+    datagram_queue.pop();
+  }
+  temporary_bytes = 0;
+
+  uint64_t last_index = first_index + data.size() - 1;
+  for ( u_int64_t i = 0; i < datagram_vec.size(); i++ ) {
+    auto [first_index_, data_, is_last_substring_] = datagram_vec[i];
+    uint64_t last_index_ = first_index_ + data_.size() - 1;
+    bool is_overlap = ( first_index <= last_index_ ) && ( first_index_ <= last_index );
+    if ( !is_overlap ) {
+      datagram_queue.push( datagram_vec[i] );
+      temporary_bytes += data_.size();
+      continue;
+    }
+    is_last_substring = is_last_substring || is_last_substring_;
+    // deal with the pre-part
+    if ( first_index_ < first_index ) // extend data to the left
+    {
+      data = data_.substr( 0, first_index - first_index_ ) + data; // 10, 10-19, 15
+      first_index = first_index_;
+    }
+    // deal with the post-part
+    if ( last_index_ > last_index ) // extend data to the right
+    {
+      data = data + data_.substr( last_index + 1 - first_index_, last_index_ - last_index ); // 10, 10-19, 15
+      last_index = last_index_;
+    }
+  }
+}
+
 void Reassembler::insert( uint64_t first_index, string data, bool is_last_substring, Writer& output )
 {
   // Your code here.
@@ -38,42 +75,11 @@ void Reassembler::insert( uint64_t first_index, string data, bool is_last_substr
   if ( in_range_size < data.size() )
     is_last_substring = false;
 
-  vector<Datagram> datagram_vec;
-  while ( !datagram_queue.empty() ) {
-    datagram_vec.push_back( datagram_queue.top() );
-    datagram_queue.pop();
-  }
-  temporary_bytes = 0;
-
-  uint64_t last_index = first_index + data.size() - 1;
-  /**
-   * ATTENTION: can overlap with multiple datagrams!!!
-   */
-  for ( u_int64_t i = 0; i < datagram_vec.size(); i++ ) {
-    auto [first_index_, data_, is_last_substring_] = datagram_vec[i];
-    uint64_t last_index_ = first_index_ + data_.size() - 1;
-    bool is_overlap = ( first_index <= last_index_ ) && ( first_index_ <= last_index );
-    if ( !is_overlap ) {
-      datagram_queue.push( datagram_vec[i] );
-      temporary_bytes += data_.size();
-      continue;
-    }
-    is_last_substring = is_last_substring || is_last_substring_;
-    // deal with the pre-part
-    if ( first_index_ < first_index ) // extend data to the left
-    {
-      data = data_.substr( 0, first_index - first_index_ ) + data; // 10, 10-19, 15
-      first_index = first_index_;
-    }
-    // deal with the post-part
-    if ( last_index_ > last_index ) // extend data to the right
-    {
-      data = data + data_.substr( last_index + 1 - first_index_, last_index_ - last_index ); // 10, 10-19, 15
-      last_index = last_index_;
-    }
-  }
-
   Datagram datagram = make_tuple( first_index, data, is_last_substring );
+  extend( datagram );
+  first_index = std::get<0>( datagram );
+  data = std::get<1>( datagram );
+  is_last_substring = std::get<2>( datagram );
 
   if ( first_index == next_index ) {
     push_to_writer( output, datagram );
