@@ -6,15 +6,13 @@
 
 class Reassembler
 {
-  typedef std::tuple<uint64_t, std::string, bool> Datagram;
+  using Datagram = std::tuple<uint64_t, std::string, bool>;
 
-  std::priority_queue<Datagram, std::vector<Datagram>, std::greater<Datagram>> datagram_queue;
+  std::priority_queue<Datagram, std::vector<Datagram>, std::greater<>> datagram_queue {};
   uint64_t next_index = 0;
   uint64_t temporary_bytes = 0;
 
 public:
-  Reassembler() : datagram_queue() {}
-
   /**
    * Write datagram to output. (should be checked in `insert` func)
    * Deal with `next_index` variable, and close the stream if reach end.
