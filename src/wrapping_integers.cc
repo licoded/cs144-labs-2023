@@ -18,17 +18,10 @@ uint64_t Wrap32::unwrap( Wrap32 zero_point, uint64_t checkpoint ) const
   uint64_t mod = 1UL << 32;
   uint64_t seqno = ( raw_value_ - zero_point.raw_value_ + mod ) % mod;
 
-  uint64_t q = checkpoint >> 32;
-  // uint64_t r = checkpoint-(q<<32);
   uint64_t r = checkpoint % mod;
-  // uint64_t d = ( mod + seqno - r ) % mod;
-
-  // uint64_t k = q + ( d > mod - d );
-
-  // std::cout << r << "\t" << d << "\t" << k << std::endl;
 
   uint64_t d;
-  uint64_t k = q;
+  uint64_t k = checkpoint >> 32;
 
   if ( r > seqno ) {
     d = ( mod + r - seqno ) % mod;
@@ -38,8 +31,6 @@ uint64_t Wrap32::unwrap( Wrap32 zero_point, uint64_t checkpoint ) const
     d = ( mod + seqno - r ) % mod;
     if ( k != 0 && d > mod - d )
       k--;
-  } else if ( r == seqno ) {
-    k = q;
   }
 
   return k * mod + seqno;
