@@ -15,22 +15,23 @@ uint64_t Wrap32::unwrap( Wrap32 zero_point, uint64_t checkpoint ) const
   // get k to make |2^32*k+zero_point - checkpoint| minimal, and checkpoint = 2^32*q+r
   // that is to say, get k to make |2^32*(k-q)+zero_point-r| minimal
 
-  uint64_t mod = 1UL << 32;
-  uint64_t seqno = ( raw_value_ - zero_point.raw_value_ + mod ) % mod;
+  const uint64_t mod = 1UL << 32;
+  const uint64_t seqno = ( raw_value_ - zero_point.raw_value_ + mod ) % mod;
 
-  uint64_t r = checkpoint % mod;
+  const uint64_t r = checkpoint % mod;
 
-  uint64_t d;
   uint64_t k = checkpoint >> 32;
 
   if ( r > seqno ) {
-    d = ( mod + r - seqno ) % mod;
-    if ( k != ( 1UL << 32 ) - 1 && d > mod - d )
+    const uint64_t d = ( mod + r - seqno ) % mod;
+    if ( k != ( 1UL << 32 ) - 1 && d > mod - d ) {
       k++;
+    }
   } else if ( r < seqno ) {
-    d = ( mod + seqno - r ) % mod;
-    if ( k != 0 && d > mod - d )
+    const uint64_t d = ( mod + seqno - r ) % mod;
+    if ( k != 0 && d > mod - d ) {
       k--;
+    }
   }
 
   return k * mod + seqno;
