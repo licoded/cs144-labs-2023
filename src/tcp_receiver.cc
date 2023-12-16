@@ -17,8 +17,12 @@ void TCPReceiver::receive( TCPSenderMessage message, Reassembler& reassembler, W
   uint64_t check_point = inbound_stream.bytes_pushed();
   uint64_t first_index = message.seqno.unwrap( zero_point, check_point );
 
-  if (first_index > 0)
-    first_index -= 1;
+  uint64_t sub_index = message.SYN ? 0 : 1;
+  if ( first_index < sub_index ) {
+    return;
+  }
+
+  first_index -= sub_index;
 
   reassembler.insert( first_index, message.payload, message.FIN, inbound_stream );
 }
@@ -28,7 +32,7 @@ TCPReceiverMessage TCPReceiver::send( const Writer& inbound_stream ) const
   // Your code here.
   // (void)inbound_stream;
 
-  uint16_t window_size = min( uint64_t(UINT16_MAX) ,inbound_stream.available_capacity() );
+  uint16_t window_size = min( uint64_t( UINT16_MAX ), inbound_stream.available_capacity() );
 
   if ( !initialized ) {
     return TCPReceiverMessage( {}, window_size );
