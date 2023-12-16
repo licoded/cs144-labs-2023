@@ -14,10 +14,9 @@ void TCPReceiver::receive( TCPSenderMessage message, Reassembler& reassembler, W
     zero_point = message.seqno;
   }
 
-  uint64_t check_point = inbound_stream.bytes_pushed();
-  uint64_t first_index = message.seqno.unwrap( zero_point, check_point );
+  uint64_t first_index = message.seqno.unwrap( zero_point, inbound_stream.bytes_pushed() );
 
-  uint64_t sub_index = message.SYN ? 0 : 1;
+  const uint64_t sub_index = message.SYN ? 0 : 1;
   if ( first_index < sub_index ) {
     return;
   }
@@ -32,12 +31,12 @@ TCPReceiverMessage TCPReceiver::send( const Writer& inbound_stream ) const
   // Your code here.
   // (void)inbound_stream;
 
-  uint16_t window_size = min( uint64_t( UINT16_MAX ), inbound_stream.available_capacity() );
+  const uint16_t window_size = min( static_cast<uint64_t>(UINT16_MAX), inbound_stream.available_capacity() );
 
   if ( !initialized ) {
-    return TCPReceiverMessage( {}, window_size );
+    return TCPReceiverMessage{ std::nullopt, window_size };
   }
 
-  Wrap32 ackno = zero_point + inbound_stream.bytes_pushed() + 1 + inbound_stream.is_closed();
-  return TCPReceiverMessage( ackno, window_size );
+  const Wrap32 ackno = zero_point + inbound_stream.bytes_pushed() + 1 + inbound_stream.is_closed();
+  return TCPReceiverMessage{ ackno, window_size };
 }
