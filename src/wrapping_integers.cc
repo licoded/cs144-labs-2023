@@ -22,15 +22,18 @@ uint64_t Wrap32::unwrap( Wrap32 zero_point, uint64_t checkpoint ) const
 
   uint64_t k = checkpoint >> 32;
 
-  if ( r > seqno ) {
-    const uint64_t d = ( mod + r - seqno ) % mod;
-    if ( k != ( 1UL << 32 ) - 1 && d > mod - d ) {
-      k++;
-    }
-  } else if ( r < seqno ) {
-    const uint64_t d = ( mod + seqno - r ) % mod;
-    if ( k != 0 && d > mod - d ) {
-      k--;
+  const uint64_t d = ( max( r, seqno ) - min( r, seqno ) ) % mod;
+
+  // if (d > mod - d)
+  if ( d > ( mod / 2 ) ) {
+    if ( r > seqno ) {
+      if ( k != ( 1UL << 32 ) - 1 ) {
+        k++;
+      }
+    } else if ( r < seqno ) {
+      if ( k != 0 ) {
+        k--;
+      }
     }
   }
 
