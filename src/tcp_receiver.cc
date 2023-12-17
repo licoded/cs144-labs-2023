@@ -31,12 +31,12 @@ TCPReceiverMessage TCPReceiver::send( const Writer& inbound_stream ) const
   // Your code here.
   // (void)inbound_stream;
 
-  const uint16_t window_size = min( static_cast<uint64_t>(UINT16_MAX), inbound_stream.available_capacity() );
+  const uint16_t window_size = min( static_cast<uint64_t>( UINT16_MAX ), inbound_stream.available_capacity() );
 
   if ( !initialized ) {
-    return TCPReceiverMessage{ std::nullopt, window_size };
+    return TCPReceiverMessage { std::nullopt, window_size };
   }
 
   const Wrap32 ackno = zero_point + inbound_stream.bytes_pushed() + 1 + inbound_stream.is_closed();
-  return TCPReceiverMessage{ ackno, window_size };
+  return TCPReceiverMessage { ackno, window_size };
 }
