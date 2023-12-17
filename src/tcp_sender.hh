@@ -8,6 +8,10 @@ class TCPSender
 {
   Wrap32 isn_; // initial seqno
   uint64_t initial_RTO_ms_;
+  uint64_t RTO_ms;
+  bool timer_open = false;
+  uint64_t timer_ms = 0;
+  bool retransmit_flag = false;
   uint64_t recv_winsz = 1;
   uint64_t poped_seqnos = 0;
   std::vector<TCPSenderMessage> outstanding_segments {};

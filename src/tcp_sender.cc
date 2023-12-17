@@ -1,13 +1,16 @@
 #include "tcp_sender.hh"
 #include "tcp_config.hh"
 
+#include <iostream>
 #include <random>
 
 using namespace std;
 
 /* TCPSender constructor (uses a random ISN if none given) */
 TCPSender::TCPSender( uint64_t initial_RTO_ms, optional<Wrap32> fixed_isn )
-  : isn_( fixed_isn.value_or( Wrap32 { random_device()() } ) ), initial_RTO_ms_( initial_RTO_ms )
+  : isn_( fixed_isn.value_or( Wrap32 { random_device()() } ) )
+  , initial_RTO_ms_( initial_RTO_ms )
+  , RTO_ms( initial_RTO_ms )
 {}
 
 uint64_t TCPSender::sequence_numbers_in_flight() const
@@ -29,8 +32,17 @@ uint64_t TCPSender::consecutive_retransmissions() const
 optional<TCPSenderMessage> TCPSender::maybe_send()
 {
   // Your code here.
+  if ( retransmit_flag ) {
+    return outstanding_segments.at( outstanding_segments.size() - 1 );
+  }
+
   if ( outstanding_segments.size() < send_index ) {
     return {};
+  }
+
+  if ( !timer_open ) {
+    timer_open = true;
+    timer_ms = RTO_ms;
   }
 
   TCPSenderMessage message = outstanding_segments.at( outstanding_segments.size() - send_index );
@@ -73,7 +85,7 @@ void TCPSender::push( Reader& outbound_stream )
 
     // outstanding_segments.push_back( message );
     outstanding_segments.insert( outstanding_segments.begin(), message );
-    recv_winsz -= message.sequence_length();
+    // recv_winsz -= message.sequence_length();
   }
 }
 
@@ -108,6 +120,7 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
   if ( msg.ackno.has_value() ) {
     uint64_t ackno = ( msg.ackno.value() ).unwrap( isn_, poped_seqnos );
 
+    bool ack_effective = false;
     while ( send_index > 1 ) {
       TCPSenderMessage& message = outstanding_segments.back();
 
@@ -117,9 +130,18 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
         poped_seqnos += message.sequence_length();
         outstanding_segments.pop_back();
         send_index--;
+        ack_effective = true;
+        retransmit_flag = false;
       } else {
         break;
       }
+    }
+
+    if ( ack_effective ) {
+      RTO_ms = initial_RTO_ms_;
+      timer_open = send_index > 1;
+      timer_ms = RTO_ms;
+      consecutive_retransmissions_ = 0;
     }
   }
 }
@@ -127,5 +149,37 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
 void TCPSender::tick( const size_t ms_since_last_tick )
 {
   // Your code here.
-  (void)ms_since_last_tick;
+  // (void)ms_since_last_tick;
+
+  if ( !timer_open ) {
+    std::cout << "!timer_open" << std::endl;
+    return;
+  }
+  std::cout << "timer_open" << std::endl;
+  if ( timer_ms > ms_since_last_tick ) {
+    timer_ms -= ms_since_last_tick;
+    return;
+  }
+
+  if ( send_index == 1 ) {
+    timer_open = false;
+    return;
+  }
+
+  // re-transmit the earliest (lowest sequence number) segment
+  // Q: I don't find approach/func to do re-transmit...
+  // A: just send it when invoke maybe_send func next time
+  retransmit_flag = true;
+
+  std::cout << recv_winsz << std::endl;
+  if ( recv_winsz > 0 ) {
+    consecutive_retransmissions_++;
+    if ( RTO_ms > UINT64_MAX / 2 ) {
+      RTO_ms = UINT64_MAX;
+    } else {
+      RTO_ms *= 2;
+    }
+  }
+
+  timer_ms = RTO_ms;
 }
