@@ -45,7 +45,7 @@ void TCPSender::push( Reader& outbound_stream )
     return;
   }
 
-  while ( recv_winsz != 0 ) {
+  while ( recv_winsz != 0 && ( outbound_stream.bytes_buffered() != 0 || first_push ) ) {
     Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped();
     TCPSenderMessage message { current_seqno, false, Buffer( "" ), false };
 
@@ -66,7 +66,8 @@ void TCPSender::push( Reader& outbound_stream )
       }
     }
 
-    outstanding_segments.push_back( message );
+    // outstanding_segments.push_back( message );
+    outstanding_segments.insert( outstanding_segments.begin(), message );
     recv_winsz -= message.sequence_length();
   }
 }
@@ -82,7 +83,7 @@ TCPSenderMessage TCPSender::send_empty_message() const
   // I don't know what bit to send...
 
   // add 1 to let recv_client to discard this message
-  TCPSenderMessage message { isn_ + 1, false, Buffer( "" ), false };
+  TCPSenderMessage message { isn_ + poped_seqnos + 1, false, Buffer( "" ), false };
 
   return message;
 }
@@ -90,7 +91,26 @@ TCPSenderMessage TCPSender::send_empty_message() const
 void TCPSender::receive( const TCPReceiverMessage& msg )
 {
   // Your code here.
-  (void)msg;
+  // (void)msg;
+
+  recv_winsz = msg.window_size;
+
+  if ( msg.ackno.has_value() ) {
+    uint64_t ackno = ( msg.ackno.value() ).unwrap( isn_, poped_seqnos );
+
+    while ( !outstanding_segments.empty() ) {
+      TCPSenderMessage& message = outstanding_segments.back();
+
+      uint64_t seqno = message.seqno.unwrap( isn_, poped_seqnos );
+      // seqno + message.sequence_length() - 1 < ackno, following are equivalent
+      if ( seqno + message.sequence_length() <= ackno ) {
+        poped_seqnos += message.sequence_length();
+        outstanding_segments.pop_back();
+      } else {
+        break;
+      }
+    }
+  }
 }
 
 void TCPSender::tick( const size_t ms_since_last_tick )
