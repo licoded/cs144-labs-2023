@@ -29,10 +29,13 @@ uint64_t TCPSender::consecutive_retransmissions() const
 optional<TCPSenderMessage> TCPSender::maybe_send()
 {
   // Your code here.
-  if ( outstanding_segments.empty() ) {
+  if ( outstanding_segments.size() < send_index ) {
     return {};
   }
-  return outstanding_segments.front();
+
+  TCPSenderMessage message = outstanding_segments.at( outstanding_segments.size() - send_index );
+  send_index++;
+  return message;
 }
 
 void TCPSender::push( Reader& outbound_stream )
@@ -98,7 +101,7 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
   if ( msg.ackno.has_value() ) {
     uint64_t ackno = ( msg.ackno.value() ).unwrap( isn_, poped_seqnos );
 
-    while ( !outstanding_segments.empty() ) {
+    while ( send_index > 1 ) {
       TCPSenderMessage& message = outstanding_segments.back();
 
       uint64_t seqno = message.seqno.unwrap( isn_, poped_seqnos );
@@ -106,6 +109,7 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
       if ( seqno + message.sequence_length() <= ackno ) {
         poped_seqnos += message.sequence_length();
         outstanding_segments.pop_back();
+        send_index--;
       } else {
         break;
       }

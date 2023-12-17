@@ -11,6 +11,7 @@ class TCPSender
   uint64_t recv_winsz = 1;
   uint64_t poped_seqnos = 0;
   std::vector<TCPSenderMessage> outstanding_segments {};
+  uint64_t send_index = 1;
   bool first_push = true;
   uint64_t consecutive_retransmissions_ = 0;
 
