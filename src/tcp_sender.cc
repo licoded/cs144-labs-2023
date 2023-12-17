@@ -56,6 +56,8 @@ void TCPSender::push( Reader& outbound_stream )
     if ( first_push ) {
       message.SYN = true;
       first_push = false;
+    } else {
+      message.seqno = message.seqno + 1;
     }
 
     uint64_t left_capacity = min( TCPConfig::MAX_PAYLOAD_SIZE, recv_winsz ) - message.sequence_length();
@@ -85,8 +87,13 @@ TCPSenderMessage TCPSender::send_empty_message() const
 
   // I don't know what bit to send...
 
+  uint64_t sent_seqnos = 0;
+  for ( uint64_t i = 1; i < send_index; i++ ) {
+    sent_seqnos += outstanding_segments.at( outstanding_segments.size() - i ).sequence_length();
+  }
+
   // add 1 to let recv_client to discard this message
-  TCPSenderMessage message { isn_ + poped_seqnos + 1, false, Buffer( "" ), false };
+  TCPSenderMessage message { isn_ + poped_seqnos + sent_seqnos, false, Buffer( "" ), false };
 
   return message;
 }
