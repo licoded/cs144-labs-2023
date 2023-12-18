@@ -21,6 +21,15 @@ uint64_t TCPSender::sequence_numbers_in_flight() const
     in_flight_seqnos += segment.sequence_length();
   }
   return in_flight_seqnos;
+
+  /**
+   * TODO: I think above is wrong... The following is right
+   * If so, other two places can invoke this func to make code concise
+   */
+  // uint64_t sent_seqnos = 0;
+  // for ( uint64_t i = 1; i < send_index; i++ ) {
+  //   sent_seqnos += outstanding_segments.at( outstanding_segments.size() - i ).sequence_length();
+  // }
 }
 
 uint64_t TCPSender::consecutive_retransmissions() const
@@ -33,6 +42,7 @@ optional<TCPSenderMessage> TCPSender::maybe_send()
 {
   // Your code here.
   if ( retransmit_flag ) {
+    retransmit_flag = false;
     return outstanding_segments.at( outstanding_segments.size() - 1 );
   }
 
@@ -60,7 +70,14 @@ void TCPSender::push( Reader& outbound_stream )
     return;
   }
 
-  while ( recv_winsz != 0 && ( outbound_stream.bytes_buffered() != 0 || first_push ) ) {
+  uint64_t sent_seqnos = 0;
+  for ( uint64_t i = 1; i < send_index; i++ ) {
+    sent_seqnos += outstanding_segments.at( outstanding_segments.size() - i ).sequence_length();
+  }
+
+  uint64_t left_recv_winsz = recv_winsz - sent_seqnos;
+
+  while ( left_recv_winsz != 0 && ( outbound_stream.bytes_buffered() != 0 || first_push ) ) {
     Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped();
     TCPSenderMessage message { current_seqno, false, Buffer( "" ), false };
 
@@ -72,20 +89,20 @@ void TCPSender::push( Reader& outbound_stream )
       message.seqno = message.seqno + 1;
     }
 
-    uint64_t left_capacity = min( TCPConfig::MAX_PAYLOAD_SIZE, recv_winsz ) - message.sequence_length();
+    uint64_t left_capacity = min( TCPConfig::MAX_PAYLOAD_SIZE, left_recv_winsz ) - message.sequence_length();
     std::string payload;
     read( outbound_stream, left_capacity, payload );
     message.payload = Buffer( payload );
 
     if ( outbound_stream.is_finished() ) {
-      if ( min( TCPConfig::MAX_PAYLOAD_SIZE, recv_winsz ) > message.sequence_length() ) {
+      if ( min( TCPConfig::MAX_PAYLOAD_SIZE, left_recv_winsz ) > message.sequence_length() ) {
         message.FIN = true;
       }
     }
 
     // outstanding_segments.push_back( message );
     outstanding_segments.insert( outstanding_segments.begin(), message );
-    // recv_winsz -= message.sequence_length();
+    left_recv_winsz -= message.sequence_length();
   }
 }
 
