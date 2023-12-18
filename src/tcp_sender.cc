@@ -70,12 +70,7 @@ void TCPSender::push( Reader& outbound_stream )
     return;
   }
 
-  uint64_t sent_seqnos = 0;
-  for ( uint64_t i = 1; i < send_index; i++ ) {
-    sent_seqnos += outstanding_segments.at( outstanding_segments.size() - i ).sequence_length();
-  }
-
-  uint64_t left_recv_winsz = recv_winsz - sent_seqnos;
+  uint64_t left_recv_winsz = recv_winsz - sequence_numbers_in_flight();
 
   while ( left_recv_winsz != 0 && ( outbound_stream.bytes_buffered() != 0 || first_push ) ) {
     Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped();
@@ -83,6 +78,8 @@ void TCPSender::push( Reader& outbound_stream )
 
     message.SYN = false;
     if ( first_push ) {
+      // we have checked left_recv_winsz !=0, i.e. left_recv_winsz > 0
+      // so, SYN can be sent (have space)
       message.SYN = true;
       first_push = false;
     } else {
@@ -101,6 +98,13 @@ void TCPSender::push( Reader& outbound_stream )
     }
 
     // outstanding_segments.push_back( message );
+    outstanding_segments.insert( outstanding_segments.begin(), message );
+    left_recv_winsz -= message.sequence_length();
+  }
+  // if FIN haven't been sent
+  if ( left_recv_winsz != 0 && outbound_stream.is_finished() && !outstanding_segments.front().FIN ) {
+    Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped();
+    TCPSenderMessage message { current_seqno, false, Buffer( "" ), true };
     outstanding_segments.insert( outstanding_segments.begin(), message );
     left_recv_winsz -= message.sequence_length();
   }
