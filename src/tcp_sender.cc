@@ -65,12 +65,13 @@ void TCPSender::push( Reader& outbound_stream )
   // Your code here.
   // (void)outbound_stream;
 
+  uint64_t pretend_recv_winsz = recv_winsz;
+
   if ( recv_winsz == 0 ) {
-    send_empty_message();
-    return;
+    pretend_recv_winsz = 1;
   }
 
-  uint64_t left_recv_winsz = recv_winsz - sequence_numbers_in_flight();
+  uint64_t left_recv_winsz = pretend_recv_winsz - min( pretend_recv_winsz, sequence_numbers_in_flight() );
 
   while ( left_recv_winsz != 0 && ( outbound_stream.bytes_buffered() != 0 || first_push ) ) {
     Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped();
@@ -86,13 +87,13 @@ void TCPSender::push( Reader& outbound_stream )
       message.seqno = message.seqno + 1;
     }
 
-    uint64_t left_capacity = min( TCPConfig::MAX_PAYLOAD_SIZE, left_recv_winsz ) - message.sequence_length();
+    uint64_t left_capacity = min( TCPConfig::MAX_PAYLOAD_SIZE, left_recv_winsz - message.sequence_length() );
     std::string payload;
     read( outbound_stream, left_capacity, payload );
     message.payload = Buffer( payload );
 
     if ( outbound_stream.is_finished() ) {
-      if ( min( TCPConfig::MAX_PAYLOAD_SIZE, left_recv_winsz ) > message.sequence_length() ) {
+      if ( left_recv_winsz > message.sequence_length() ) {
         message.FIN = true;
       }
     }
