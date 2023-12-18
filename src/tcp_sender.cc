@@ -103,7 +103,7 @@ void TCPSender::push( Reader& outbound_stream )
   }
   // if FIN haven't been sent
   if ( left_recv_winsz != 0 && outbound_stream.is_finished() && !outstanding_segments.front().FIN ) {
-    Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped();
+    Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped() + 1;
     TCPSenderMessage message { current_seqno, false, Buffer( "" ), true };
     outstanding_segments.insert( outstanding_segments.begin(), message );
     left_recv_winsz -= message.sequence_length();
