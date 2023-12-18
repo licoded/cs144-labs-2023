@@ -17,7 +17,7 @@ uint64_t TCPSender::sequence_numbers_in_flight() const
 {
   // Your code here.
   uint64_t in_flight_seqnos = 0;
-  for ( auto& segment : outstanding_segments ) {
+  for ( const auto& segment : outstanding_segments ) {
     in_flight_seqnos += segment.sequence_length();
   }
   return in_flight_seqnos;
@@ -74,7 +74,7 @@ void TCPSender::push( Reader& outbound_stream )
   uint64_t left_recv_winsz = pretend_recv_winsz - min( pretend_recv_winsz, sequence_numbers_in_flight() );
 
   while ( left_recv_winsz != 0 && ( outbound_stream.bytes_buffered() != 0 || first_push ) ) {
-    Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped();
+    const Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped();
     TCPSenderMessage message { current_seqno, false, Buffer( "" ), false };
 
     message.SYN = false;
@@ -87,7 +87,7 @@ void TCPSender::push( Reader& outbound_stream )
       message.seqno = message.seqno + 1;
     }
 
-    uint64_t left_capacity = min( TCPConfig::MAX_PAYLOAD_SIZE, left_recv_winsz - message.sequence_length() );
+    const uint64_t left_capacity = min( TCPConfig::MAX_PAYLOAD_SIZE, left_recv_winsz - message.sequence_length() );
     std::string payload;
     read( outbound_stream, left_capacity, payload );
     message.payload = Buffer( payload );
@@ -104,10 +104,9 @@ void TCPSender::push( Reader& outbound_stream )
   }
   // if FIN haven't been sent
   if ( left_recv_winsz != 0 && outbound_stream.is_finished() && !outstanding_segments.front().FIN ) {
-    Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped() + 1;
-    TCPSenderMessage message { current_seqno, false, Buffer( "" ), true };
+    const Wrap32 current_seqno = isn_ + outbound_stream.bytes_popped() + 1;
+    const TCPSenderMessage message { current_seqno, false, Buffer( "" ), true };
     outstanding_segments.insert( outstanding_segments.begin(), message );
-    left_recv_winsz -= message.sequence_length();
   }
 }
 
@@ -140,7 +139,7 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
   recv_winsz = msg.window_size;
 
   if ( msg.ackno.has_value() ) {
-    uint64_t ackno = ( msg.ackno.value() ).unwrap( isn_, poped_seqnos );
+    const uint64_t ackno = ( msg.ackno.value() ).unwrap( isn_, poped_seqnos );
 
     // check if ackno is valid
     if ( ackno > poped_seqnos + sequence_numbers_in_flight() ) {
@@ -149,9 +148,9 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
 
     bool ack_effective = false;
     while ( send_index > 1 ) {
-      TCPSenderMessage& message = outstanding_segments.back();
+      const TCPSenderMessage& message = outstanding_segments.back();
 
-      uint64_t seqno = message.seqno.unwrap( isn_, poped_seqnos );
+      const uint64_t seqno = message.seqno.unwrap( isn_, poped_seqnos );
       // seqno + message.sequence_length() - 1 < ackno, following are equivalent
       if ( seqno + message.sequence_length() <= ackno ) {
         poped_seqnos += message.sequence_length();
