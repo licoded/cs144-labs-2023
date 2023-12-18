@@ -141,6 +141,11 @@ void TCPSender::receive( const TCPReceiverMessage& msg )
   if ( msg.ackno.has_value() ) {
     uint64_t ackno = ( msg.ackno.value() ).unwrap( isn_, poped_seqnos );
 
+    // check if ackno is valid
+    if ( ackno > poped_seqnos + sequence_numbers_in_flight() ) {
+      return;
+    }
+
     bool ack_effective = false;
     while ( send_index > 1 ) {
       TCPSenderMessage& message = outstanding_segments.back();
